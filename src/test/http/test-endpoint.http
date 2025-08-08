@@ -1,0 +1,11 @@
+###
+POST http://localhost:8080/orders?
+    userId={{$random.alphanumeric(8)}}&
+    amount=666
+
+<> 2025-08-08T232424.200.txt
+<> 2025-08-08T232028.500.json
+<> 2025-08-08T231910.404.json
+<> 2025-08-08T231714.404.json
+<> 2025-08-08T231712.404.json
+<> 2025-08-08T231629.404.json
