@@ -1,9 +1,8 @@
-// DemoController.java
 package com.example.demo.web;
 
 import com.example.demo.events.OrderCreatedPayload;
 import com.example.demo.events.domain.BaseDomainEvent;
-import org.springframework.context.ApplicationEventPublisher;
+import com.example.demo.events.publisher.EventPublishingService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,10 +16,10 @@ import java.util.UUID;
 @RequestMapping("/orders")
 public class DemoController {
 
-    private final ApplicationEventPublisher eventPublisher;
+    private final EventPublishingService eventPublishingService;
 
-    public DemoController(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
+    public DemoController(EventPublishingService eventPublishingService) {
+        this.eventPublishingService = eventPublishingService;
     }
 
     @PostMapping
@@ -42,7 +41,8 @@ public class DemoController {
                 .payload(payload)
                 .build();
 
-        eventPublisher.publishEvent(event);
+        // 发布事件到本地和Kafka
+        eventPublishingService.publishEvent(event);
         return "Order created: " + orderId;
     }
 }

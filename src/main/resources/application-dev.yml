@@ -1,15 +1,13 @@
 spring:
-  profiles:
-    active: dev
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        spring.json.add.type.headers: true   # 倾向于使用明确的 DTO，而非类型头
+        spring.json.add.type.headers: true
     consumer:
-      group-id: ${APP_CONSUMER_GROUP:order-service}
+      group-id: ${APP_CONSUMER_GROUP:order-service-dev}
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
@@ -22,11 +20,8 @@ spring:
 
 app:
   topics:
-    order-events: order-events
+    order-events: order-events-dev
 
 logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/application.log
+  level:
+    com.example.demo: DEBUG

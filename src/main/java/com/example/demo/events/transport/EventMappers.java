@@ -2,6 +2,8 @@ package com.example.demo.events.transport;
 
 import com.example.demo.events.domain.BaseDomainEvent;
 import com.example.demo.events.domain.DomainEventMessage;
+import com.example.demo.events.versioning.EventVersionManager;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Map;
@@ -52,11 +54,29 @@ public final class EventMappers {
      * 将传输事件消息对象转换为通用领域事件对象。
      *
      * @param msg 跨进程传输的事件消息对象，包含事件标识、类型、时间戳、关联 ID、扩展属性及业务负载信息。
+     * @param eventVersionManager 事件版本管理器（可选）
      * @return 转换后的通用领域事件对象，包含类型化的业务负载及其他领域事件信息。
      */
-    public static BaseDomainEvent<?> toDomainEvent(DomainEventMessage msg) {
+    public static BaseDomainEvent<?> toDomainEvent(DomainEventMessage msg, EventVersionManager eventVersionManager) {
+        // 如果提供了版本管理器，先进行版本转换
+        Object payload = msg.payload();
+        if (eventVersionManager != null) {
+            // 检查版本兼容性
+            if (!eventVersionManager.isVersionCompatible(msg.type(), extractVersionFromSchemaId(msg.schemaId()))) {
+                // 如果不兼容，尝试转换到兼容版本
+                JsonNode payloadNode = OBJECT_MAPPER.valueToTree(payload);
+                JsonNode convertedPayload = eventVersionManager.convertEventVersion(
+                        msg.type(), 
+                        extractVersionFromSchemaId(msg.schemaId()), 
+                        "v1", // 目标版本
+                        payloadNode
+                );
+                payload = OBJECT_MAPPER.convertValue(convertedPayload, Map.class);
+            }
+        }
+        
         Class<?> payloadClass = resolvePayloadClassBySchema(msg.schemaId());
-        Object typedPayload = convertPayload(msg.payload(), payloadClass);
+        Object typedPayload = convertPayload(payload, payloadClass);
 
         return BaseDomainEvent.builder()
                 .id(msg.id())
@@ -66,6 +86,16 @@ public final class EventMappers {
                 .attributes(msg.attributes())
                 .payload(typedPayload)
                 .build();
+    }
+
+    /**
+     * 将传输事件消息对象转换为通用领域事件对象（无版本管理）。
+     *
+     * @param msg 跨进程传输的事件消息对象，包含事件标识、类型、时间戳、关联 ID、扩展属性及业务负载信息。
+     * @return 转换后的通用领域事件对象，包含类型化的业务负载及其他领域事件信息。
+     */
+    public static BaseDomainEvent<?> toDomainEvent(DomainEventMessage msg) {
+        return toDomainEvent(msg, null);
     }
 
     /**
@@ -95,5 +125,20 @@ public final class EventMappers {
             return payload;
         }
         return OBJECT_MAPPER.convertValue(payload, targetClass);
+    }
+    
+    /**
+     * 从schemaId中提取版本信息
+     * 
+     * @param schemaId schemaId
+     * @return 版本信息
+     */
+    private static String extractVersionFromSchemaId(String schemaId) {
+        if (schemaId == null) return "v1";
+        int lastDotIndex = schemaId.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < schemaId.length() - 1) {
+            return schemaId.substring(lastDotIndex + 1);
+        }
+        return "v1";
     }
 }

@@ -2,8 +2,9 @@ package com.example.demo.events.consumer;
 
 import com.example.demo.events.domain.DomainEventMessage;
 import com.example.demo.events.domain.EventHeaders;
-import com.example.demo.events.producer.NativeApplicationEventPublisher;
+import com.example.demo.events.publisher.LocalEventPublisher;
 import com.example.demo.events.transport.EventMappers;
+import com.example.demo.events.versioning.EventVersionManager;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
@@ -14,17 +15,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class KafkaEventInboundBridge {
 
-    // 注意这个为native
-    private final NativeApplicationEventPublisher nativePublisher;
+    private final LocalEventPublisher localEventPublisher;
+    private final EventVersionManager eventVersionManager;
 
-    public KafkaEventInboundBridge(NativeApplicationEventPublisher nativePublisher) {
-        this.nativePublisher = nativePublisher;
+    public KafkaEventInboundBridge(LocalEventPublisher localEventPublisher,
+                                   EventVersionManager eventVersionManager) {
+        this.localEventPublisher = localEventPublisher;
+        this.eventVersionManager = eventVersionManager;
     }
 
     @KafkaListener(topics = "${app.topics.order-events}")
     public void onMessage(@Payload DomainEventMessage message) {
-        var domainEvent = EventMappers.toDomainEvent(message);
+        // 使用事件版本管理器转换事件
+        var domainEvent = EventMappers.toDomainEvent(message, eventVersionManager);
         Object wrapped = EventHeaders.markFromKafka(domainEvent);
-        nativePublisher.publishEvent(wrapped);
+        localEventPublisher.publishEvent(wrapped);
     }
 }

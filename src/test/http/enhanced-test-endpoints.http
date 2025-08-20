@@ -1,0 +1,9 @@
+### 创建订单
+POST http://localhost:8080/orders?userId=user123&amount=99.99
+
+<> 2025-08-20T221542.200.txt
+
+### 查询服务信息
+GET http://localhost:8080/who
+
+<> 2025-08-20T221527.200.txt

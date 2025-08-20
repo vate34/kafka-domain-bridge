@@ -21,6 +21,8 @@ public final class EventPayloadRegistry {
 
         // 在此登记所有受支持的负载契约
         register(s2c, c2s, "order.created.v1", OrderCreatedPayload.class);
+        // 注册v2版本的OrderCreated事件（如果需要不同的类）
+        // register(s2c, c2s, "order.created.v2", OrderCreatedPayloadV2.class);
 
         SCHEMA_TO_CLASS = Collections.unmodifiableMap(s2c);
         CLASS_TO_SCHEMA = Collections.unmodifiableMap(c2s);
